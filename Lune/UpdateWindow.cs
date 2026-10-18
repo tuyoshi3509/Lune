@@ -35,7 +35,11 @@ public partial class MainWindow
         }
         if (args.Any(a => a.EndsWith("-test") || a is "--smoke" or "--perf")) return;
         if (Preferences.CheckUpdatesOnStartup) await Updates.CheckAsync(false, LifetimeToken);
-        if (Updates.HasUpdate) SetStatus($"Lune {Updates.Available!.Version} が公開されています。左下の「更新あり」から更新できます。");
+        if (Updates.HasUpdate)
+        {
+            SetStatus($"Lune {Updates.Available!.Version} が公開されています。左下の「更新あり」から更新できます。");
+            tray?.ShowBalloonTip(6000, "Luneの更新があります", $"{Updates.Available.Version} に更新できます。クリックして確認してください。", System.Windows.Forms.ToolTipIcon.Info);
+        }
     }
     internal void ApplyPreparedUpdate(string manifest)
     {

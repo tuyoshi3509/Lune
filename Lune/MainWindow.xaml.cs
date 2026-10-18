@@ -765,6 +765,7 @@ public partial class MainWindow : Window
         var icon = new System.Drawing.Icon(stream); stream.Dispose();
         tray = new System.Windows.Forms.NotifyIcon { Text = "Lune — 音楽プレイヤー", Icon = icon, Visible = true };
         tray.DoubleClick += (_, _) => Dispatcher.Invoke(RestoreMain);
+        tray.BalloonTipClicked += (_, _) => Dispatcher.Invoke(() => { RestoreMain(); ShowUpdates(); });
         var menu = new System.Windows.Forms.ContextMenuStrip();
         menu.Items.Add("Luneを開く", null, (_, _) => Dispatcher.Invoke(RestoreMain));
         menu.Items.Add("ミニプレイヤー", null, (_, _) => Dispatcher.Invoke(ShowMini));

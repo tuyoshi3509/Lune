@@ -37,6 +37,10 @@ public sealed class AppUpdates : Observable
     private Task? checkTask;
     private bool busy;
     private string status = "";
+    internal int RequestCount { get; private set; }
+    internal long MetadataBytes { get; private set; }
+    internal int CacheWrites { get; private set; }
+    internal int LastResponseCode { get; private set; }
     public static Version CurrentVersion => typeof(AppUpdates).Assembly.GetName().Version ?? new Version(1, 0, 0);
     public static string CurrentText => CurrentVersion.ToString(3);
     public ReleaseUpdate? Available => cache.Release is { } r && ParseVersion(r.Version) > CurrentVersion ? r : null;
@@ -75,13 +79,16 @@ public sealed class AppUpdates : Observable
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct); timeout.CancelAfter(TimeSpan.FromSeconds(20));
             using var request = new HttpRequestMessage(HttpMethod.Get, Endpoint);
             if (cache.Release != null && cache.ETag.Length > 0) request.Headers.TryAddWithoutValidation("If-None-Match", cache.ETag);
+            RequestCount++;
             using var response = await Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+            LastResponseCode = (int)response.StatusCode;
             if (response.StatusCode == HttpStatusCode.NotModified) { /* Keep the cached, validated release. */ }
             else if (response.StatusCode == HttpStatusCode.NotFound) { cache.Release = null; cache.ETag = ""; }
             else
             {
                 response.EnsureSuccessStatusCode();
                 var body = await ReadBounded(response.Content, 2 * 1024 * 1024, timeout.Token);
+                MetadataBytes += body.Length;
                 using var json = JsonDocument.Parse(body); var root = json.RootElement;
                 if (root.GetProperty("draft").GetBoolean() || root.GetProperty("prerelease").GetBoolean()) throw new InvalidDataException("正式公開された更新がありません。");
                 var tag = root.GetProperty("tag_name").GetString()!; ParseVersion(tag);
@@ -97,7 +104,7 @@ public sealed class AppUpdates : Observable
                 cache.Release = new ReleaseUpdate(tag, url, hash[7..], size, notes.Length > 8000 ? notes[..8000] : notes);
                 cache.ETag = response.Headers.ETag?.ToString() ?? "";
             }
-            cache.CheckedAt = DateTimeOffset.UtcNow; store.Save("update-cache.json", cache);
+            cache.CheckedAt = DateTimeOffset.UtcNow; store.Save("update-cache.json", cache); CacheWrites++;
             Status = HasUpdate ? $"{Available!.Version} に更新できます。" : $"最新版です（{CurrentText}）。";
         }
         catch (OperationCanceledException) { Status = "更新確認を中断しました。接続を確認して再試行できます。"; }
@@ -115,6 +122,31 @@ public sealed class AppUpdates : Observable
         "Lune.exe", "lune.portable", "Luneを起動.cmd", "README.md", "CONVENIENCE.md", "THIRD-PARTY-NOTICES.md",
         "licenses/Deno-LICENSE.txt", "licenses/NAudio-LICENSE.txt", "licenses/TagLibSharp-COPYING.txt", "licenses/yt-dlp-LICENSE.txt"
     };
+    private static void MaintainStaging()
+    {
+        var root = Path.Combine(Paths.Data, "updates");
+        if (!Directory.Exists(root)) return;
+        var completed = new List<DirectoryInfo>(); var pending = 0;
+        foreach (var dir in new DirectoryInfo(root).EnumerateDirectories())
+        {
+            if (!Guid.TryParseExact(dir.Name, "N", out _) || dir.Attributes.HasFlag(FileAttributes.ReparsePoint)) continue;
+            try
+            {
+                var result = Path.Combine(dir.FullName, "result.json");
+                if (!File.Exists(result)) { pending++; continue; }
+                using var json = JsonDocument.Parse(File.ReadAllText(result));
+                if (json.RootElement.TryGetProperty("Success", out var success) && success.GetBoolean()) completed.Add(dir); else pending++;
+            }
+            catch { pending++; }
+        }
+        foreach (var dir in completed.OrderByDescending(d => d.LastWriteTimeUtc).Skip(8))
+        {
+            var full = Path.GetFullPath(dir.FullName);
+            if (full.StartsWith(Path.GetFullPath(root) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                try { Directory.Delete(full, true); } catch { }
+        }
+        if (pending >= 3) throw new IOException("未完了の更新が3件あります。data/updates内のresult.jsonを確認し、必要なバックアップを保存してから該当フォルダーを整理してください。");
+    }
     public async Task<string> PrepareAsync(CancellationToken ct)
     {
         if (Busy) throw new InvalidOperationException("更新の確認・取得が進行中です。");
@@ -128,7 +160,7 @@ public sealed class AppUpdates : Observable
             if (release.Url != Repository + $"/releases/download/{tag}/Lune-{tag.TrimStart('v')}-win-x64.zip" ||
                 !Regex.IsMatch(release.Hash, @"\A[0-9a-fA-F]{64}\z") || release.Size <= 0 || release.Size > MaxZip)
                 throw new InvalidDataException("保存された更新情報が不正です。再確認してください。");
-            Directory.CreateDirectory(stage);
+            MaintainStaging(); Directory.CreateDirectory(stage);
             var zipPath = Path.Combine(stage, "update.zip");
             using (var response = await Client.GetAsync(release.Url, HttpCompletionOption.ResponseHeadersRead, ct))
             {
