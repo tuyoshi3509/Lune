@@ -211,6 +211,8 @@ public sealed class AppUpdates : Observable
     {
         var powershell = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
         var start = new ProcessStartInfo(powershell) { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(manifest)! };
+        // A PowerShell 7 parent can export module paths incompatible with Windows PowerShell.
+        start.Environment.Remove("PSModulePath");
         foreach (var arg in new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", Path.Combine(start.WorkingDirectory, "apply.ps1"), "-Manifest", manifest }) start.ArgumentList.Add(arg);
         using var helper = Process.Start(start) ?? throw new IOException("更新処理を開始できませんでした。");
     }

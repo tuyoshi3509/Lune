@@ -7,6 +7,12 @@ $result = Join-Path $stage 'result.json'
 $applied = [Collections.Generic.List[object]]::new()
 $newProcess = $null
 $originalExited = $false
+function File-Hash([string]$path) {
+    $stream = [IO.File]::OpenRead($path)
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { return ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '') }
+    finally { $sha.Dispose(); $stream.Dispose() }
+}
 function Assert-PlainPath([string]$path) {
     $cursor = [IO.Path]::GetFullPath($path)
     while ($cursor) {
@@ -36,7 +42,7 @@ try {
         if ($file.Name -cnotin $allowed -or $seen.ContainsKey($file.Name)) { throw 'Unexpected update file' }; $seen[$file.Name] = $true
         $source = Join-Path $stage ('files/' + $file.Name); $target = Join-Path $root $file.Name
         Assert-PlainPath $source; Assert-PlainPath $target
-        if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash -ne $file.Hash) { throw 'Prepared file checksum mismatch' }
+        if ((File-Hash $source) -ne $file.Hash) { throw 'Prepared file checksum mismatch' }
     }
     if (-not $seen.ContainsKey('Lune.exe') -or -not $seen.ContainsKey('lune.portable')) { throw 'Incomplete update' }
     $old = Get-Process -Id $plan.ProcessId -ErrorAction SilentlyContinue
@@ -72,6 +78,11 @@ try {
 }
 catch {
     $message = $_.Exception.Message
+    if (-not $originalExited) {
+        $old = Get-Process -Id $plan.ProcessId -ErrorAction SilentlyContinue
+        if (-not $old -or $old.StartTime.ToUniversalTime().Ticks -ne $plan.ProcessStartTicks) { $originalExited = $true }
+        elseif ($old.WaitForExit(10000)) { $originalExited = $true }
+    }
     $canRestore = $true
     if ($newProcess -and -not $newProcess.HasExited) { $null = $newProcess.CloseMainWindow(); $canRestore = $newProcess.WaitForExit(10000) }
     if ($canRestore) {
