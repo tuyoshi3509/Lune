@@ -1,0 +1,145 @@
+﻿<Window x:Class="Lune.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Lune" xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework" Title="Lune — 音楽プレイヤー" Width="1200" Height="800" MinWidth="980" MinHeight="640" WindowStartupLocation="CenterScreen" WindowStyle="None" AllowDrop="True" Drop="Files_Drop" PreviewKeyDown="Window_KeyDown" Closing="Window_Closing" Loaded="Window_Loaded" SourceInitialized="Window_SourceInitialized" StateChanged="Window_StateChanged">
+ <Window.Style><StaticResource ResourceKey="{x:Type Window}"/></Window.Style>
+ <shell:WindowChrome.WindowChrome><shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="6" CornerRadius="12" GlassFrameThickness="0"/></shell:WindowChrome.WindowChrome>
+ <Window.Resources>
+  <local:ArtworkConverter x:Key="Art"/>
+  <Style x:Key="NavButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="Margin" Value="0,2"/><Setter Property="Padding" Value="14,12"/></Style>
+  <Style x:Key="Trimmed" TargetType="TextBlock"><Setter Property="TextTrimming" Value="CharacterEllipsis"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
+ </Window.Resources>
+ <Border BorderBrush="{DynamicResource Line}" BorderThickness="1" Background="{DynamicResource Bg}">
+ <Grid>
+  <Grid.RowDefinitions><RowDefinition Height="46"/><RowDefinition Height="*"/><RowDefinition Height="108"/></Grid.RowDefinitions>
+  <Border Grid.Row="0" Background="{DynamicResource Sidebar}" MouseLeftButtonDown="Title_Drag">
+   <Grid Margin="18,0,6,0"><TextBlock Text="◒   L U N E" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Muted}"/>
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+     <Button Style="{StaticResource Icon}" Content="&#xE740;" ToolTip="ミニプレイヤー (Ctrl+M)" Click="Mini_Click"/>
+     <Button Style="{StaticResource Icon}" Content="&#xE921;" ToolTip="最小化" Click="Minimize_Click"/>
+     <Button Style="{StaticResource Icon}" Content="&#xE922;" ToolTip="最大化 / 元に戻す" Click="Maximize_Click"/>
+     <Button Style="{StaticResource Icon}" Content="&#xE8BB;" ToolTip="閉じる" Click="Close_Click"/>
+    </StackPanel>
+   </Grid>
+  </Border>
+  <Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition Width="208"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+   <Border Background="{DynamicResource Sidebar}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0">
+    <ScrollViewer x:Name="SidebarScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16,18,16,16">
+    <Grid MinHeight="590" Height="{Binding ViewportHeight, ElementName=SidebarScroll}"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+     <StackPanel Margin="12,2,0,20"><TextBlock Text="Lune" FontFamily="Segoe UI Variable Display" FontWeight="SemiBold" FontSize="36"/></StackPanel>
+     <StackPanel Grid.Row="1">
+      <TextBlock Text="ライブラリ" Style="{StaticResource MutedText}" Margin="14,0,0,10"/>
+      <Button x:Name="AlbumsNav" Style="{StaticResource NavButton}" Tag="albums" Click="Nav_Click"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE93C;" Margin="0,0,13,0"/><TextBlock Text="アルバム"/></StackPanel></Button>
+      <Button x:Name="ArtistsNav" Style="{StaticResource NavButton}" Tag="artists" Click="Nav_Click"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE77B;" Margin="0,0,13,0"/><TextBlock Text="アーティスト"/></StackPanel></Button>
+      <Button x:Name="TracksNav" Style="{StaticResource NavButton}" Tag="tracks" Click="Nav_Click"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8D6;" Margin="0,0,13,0"/><TextBlock Text="すべての曲"/></StackPanel></Button>
+      <Button x:Name="FavoritesNav" Style="{StaticResource NavButton}" Tag="favorites" Click="Nav_Click"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe Fluent Icons" Text="&#xEB51;" Margin="0,0,13,0"/><TextBlock Text="お気に入り"/></StackPanel></Button>
+      <Button x:Name="YouTubeNav" Style="{StaticResource NavButton}" Tag="youtube" Click="Nav_Click"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE714;" Margin="0,0,13,0"/><TextBlock Text="YouTube"/></StackPanel></Button>
+     </StackPanel>
+     <Grid Grid.Row="2" Margin="12,25,0,8"><TextBlock Text="マイリスト" Style="{StaticResource MutedText}" VerticalAlignment="Center"/><Button HorizontalAlignment="Right" Style="{StaticResource Icon}" Content="&#xE710;" ToolTip="マイリストを作成" Click="NewPlaylist_Click"/></Grid>
+     <ListBox x:Name="PlaylistList" Grid.Row="3" SelectionChanged="Playlist_SelectionChanged" DisplayMemberPath="Name" ContextMenuOpening="Playlist_ContextMenuOpening"><ListBox.ContextMenu><ContextMenu/></ListBox.ContextMenu></ListBox>
+     <StackPanel Grid.Row="4" Margin="0,16,0,0">
+      <Button Style="{StaticResource NavButton}" Click="Import_Click"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE896;" Margin="0,0,13,0"/><TextBlock Text="URLから取り込む"/></StackPanel></Button>
+      <Button Style="{StaticResource NavButton}" Click="MusicTools_Click" Content="便利機能"/>
+      <Button Style="{StaticResource NavButton}" Click="Settings_Click"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE713;" Margin="0,0,13,0"/><TextBlock Text="設定"/></StackPanel></Button>
+     </StackPanel>
+    </Grid></ScrollViewer>
+   </Border>
+   <Grid Grid.Column="1" Margin="30,20,28,0"><Grid.RowDefinitions><RowDefinition Height="44"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="38"/></Grid.RowDefinitions>
+    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="120"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+     <Grid Margin="0,0,9,0"><TextBox x:Name="SearchBox" Padding="38,9,12,9" TextChanged="Search_Changed" ToolTip="曲名・アルバム名・アーティスト名で検索 (Ctrl+F)"/><TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE721;" Foreground="{DynamicResource Muted}" Margin="13,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/><TextBlock x:Name="SearchHint" Text="音楽を検索…" Foreground="{DynamicResource Muted}" Margin="39,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/></Grid>
+     <ComboBox x:Name="SearchField" Grid.Column="1" SelectedIndex="0" SelectionChanged="Search_FieldChanged"><ComboBoxItem Content="すべて"/><ComboBoxItem Content="曲名"/><ComboBoxItem Content="アルバム名"/><ComboBoxItem Content="アーティスト名"/></ComboBox>
+     <Button Grid.Column="2" Margin="12,0,0,0" Background="{DynamicResource Surface}" Click="AddMusic_Click" Content="＋  音楽を追加"/>
+    </Grid>
+    <Grid Grid.Row="1" Margin="0,27,0,18"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+     <StackPanel><TextBlock x:Name="PageTitle" Text="アルバム" TextTrimming="CharacterEllipsis" FontSize="30" FontWeight="SemiBold" Margin="-1,3,0,5"/><TextBlock x:Name="PageSubtitle" Text="音楽を読み込み中…" Foreground="{DynamicResource Muted}"/></StackPanel>
+     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,0,3">
+      <ComboBox x:Name="SortSelector" Width="148" Height="36" VerticalAlignment="Center" Margin="0,0,10,0" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="Sort_Changed" ToolTip="名前順・追加順を切り替え"/>
+      <Button x:Name="LayoutToggle" Style="{StaticResource Icon}" Content="&#xE8FD;" ToolTip="リスト表示に切り替え" Click="LayoutToggle_Click" Margin="0,0,8,0"/>
+      <Button x:Name="BackButton" Content="← 戻る" Visibility="Collapsed" Click="Back_Click" Margin="0,0,8,0"/>
+      <Button x:Name="ViewMenuButton" Content="•••" FontSize="18" Click="ViewMenu_Click" ToolTip="表示中のリストを操作" Margin="0,0,6,0"/>
+      <Button x:Name="ScheduleButton" Style="{StaticResource Icon}" Content="&#xE823;" Visibility="Collapsed" Click="Schedule_Click" ToolTip="時間帯で再生する設定" Margin="0,0,6,0"/>
+      <Button Style="{StaticResource Primary}" Content="▶  すべて再生" Click="PlayAll_Click"/>
+     </StackPanel>
+    </Grid>
+    <Border x:Name="DetailBanner" Grid.Row="2" Visibility="Collapsed" Background="{DynamicResource Surface}" CornerRadius="10" Padding="14" Margin="0,0,0,16">
+     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="68"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Image x:Name="DetailArt" Width="54" Height="54" Stretch="UniformToFill"/><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock x:Name="DetailArtist" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock x:Name="DetailText" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,5,0,0"/></StackPanel><Button Grid.Column="2" Content="アートを変更" Click="ChangeArt_Click"/></Grid>
+    </Border>
+    <Grid Grid.Row="3">
+     <ListBox x:Name="CollectionList" Visibility="Collapsed" Padding="0" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel">
+      <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Height" Value="78"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="0"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><ContentPresenter/></ControlTemplate></Setter.Value></Setter></Style></ListBox.ItemContainerStyle>
+      <ListBox.ItemTemplate><DataTemplate><Button Padding="10,8" HorizontalContentAlignment="Stretch" Tag="{Binding}" Click="Album_Click" ContextMenuOpening="Collection_ContextMenuOpening" ToolTip="{Binding Title}"><Button.ContextMenu><ContextMenu/></Button.ContextMenu><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="68"/><ColumnDefinition Width="*"/><ColumnDefinition Width="130"/></Grid.ColumnDefinitions>
+       <Image Source="{Binding Artwork, Converter={StaticResource Art}}" Width="52" Height="52" Stretch="UniformToFill" HorizontalAlignment="Left"/>
+       <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Subtitle}" Foreground="{DynamicResource Muted}" Margin="0,5,8,0" TextTrimming="CharacterEllipsis"/></StackPanel>
+       <TextBlock Grid.Column="2" Text="{Binding Detail}" Foreground="{DynamicResource Muted}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+      </Grid></Button></DataTemplate></ListBox.ItemTemplate>
+     </ListBox>
+     <ListBox x:Name="AlbumItems" Padding="0" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.CacheLength="1" VirtualizingPanel.CacheLengthUnit="Page">
+      <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel/></ItemsPanelTemplate></ListBox.ItemsPanel>
+      <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Height" Value="{DynamicResource AlbumRowHeight}"/><Setter Property="Focusable" Value="False"/><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0"/><Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><ContentPresenter/></ControlTemplate></Setter.Value></Setter></Style></ListBox.ItemContainerStyle>
+      <ListBox.ItemTemplate><DataTemplate>
+      <ItemsControl ItemsSource="{Binding}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+       <ItemsControl.ItemTemplate><DataTemplate><Button Padding="0" Margin="0,0,18,23" Click="Album_Click" Tag="{Binding}" ToolTip="{Binding Title}" ContextMenuOpening="Collection_ContextMenuOpening"><Button.ContextMenu><ContextMenu/></Button.ContextMenu><Button.Template><ControlTemplate TargetType="Button"><Border x:Name="Card" Background="Transparent" CornerRadius="10" Padding="0"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Card" Property="Background" Value="{DynamicResource Surface}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+        <StackPanel Width="{DynamicResource AlbumSize}"><Rectangle Width="{DynamicResource AlbumSize}" Height="{DynamicResource AlbumSize}" RadiusX="9" RadiusY="9"><Rectangle.Fill><ImageBrush ImageSource="{Binding Artwork, Converter={StaticResource Art}}" Stretch="UniformToFill"/></Rectangle.Fill></Rectangle><TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="2,11,2,0"/><TextBlock Text="{Binding Subtitle}" Foreground="{DynamicResource Muted}" FontSize="12" TextTrimming="CharacterEllipsis" Margin="2,4,2,0"/><TextBlock Text="{Binding Detail}" Foreground="{DynamicResource Muted}" FontSize="10" Margin="2,5,2,0"/></StackPanel>
+       </Button></DataTemplate></ItemsControl.ItemTemplate>
+      </ItemsControl>
+      </DataTemplate></ListBox.ItemTemplate>
+     </ListBox>
+     <DataGrid x:Name="TrackGrid" Visibility="Collapsed" MouseDoubleClick="Track_DoubleClick" ContextMenuOpening="Track_ContextMenuOpening" PreviewMouseRightButtonDown="Track_RightDown" Sorting="Track_Sorting" SelectionUnit="FullRow">
+      <DataGrid.ContextMenu><ContextMenu/></DataGrid.ContextMenu>
+      <DataGrid.Columns>
+       <DataGridTemplateColumn Header="" Width="42" MinWidth="42" CanUserResize="False" CanUserSort="False">
+        <DataGridTemplateColumn.CellStyle><Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}"><Setter Property="Padding" Value="0"/></Style></DataGridTemplateColumn.CellStyle>
+        <DataGridTemplateColumn.CellTemplate><DataTemplate><Button Content="{Binding Heart}" Tag="{Binding}" Width="34" Height="34" HorizontalAlignment="Center" Padding="0" FontSize="19" Foreground="{DynamicResource Accent}" Click="Favorite_Click" ToolTip="お気に入りを切り替え"/></DataTemplate></DataGridTemplateColumn.CellTemplate>
+       </DataGridTemplateColumn>
+       <DataGridTextColumn Header="#" Binding="{Binding Number}" Width="44" ElementStyle="{StaticResource Trimmed}"/>
+       <DataGridTemplateColumn Header="曲名" SortMemberPath="Title" Width="2.2*"><DataGridTemplateColumn.CellTemplate><DataTemplate><local:MarqueeText Text="{Binding DisplayTitle}" OnHover="True"/></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+       <DataGridTextColumn Header="アーティスト" Binding="{Binding Artist}" Width="1.4*" ElementStyle="{StaticResource Trimmed}"/>
+       <DataGridTextColumn Header="アルバム" Binding="{Binding Album}" Width="1.5*" ElementStyle="{StaticResource Trimmed}"/>
+       <DataGridTextColumn Header="時間" Binding="{Binding Duration}" SortMemberPath="Seconds" Width="68" ElementStyle="{StaticResource Trimmed}"/>
+       <DataGridTextColumn Header="形式" Binding="{Binding Format}" Width="62" ElementStyle="{StaticResource Trimmed}"/>
+       <DataGridTemplateColumn Header="動画" Width="46" MinWidth="46" CanUserResize="False" CanUserSort="False">
+        <DataGridTemplateColumn.CellStyle><Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}"><Setter Property="Padding" Value="0"/></Style></DataGridTemplateColumn.CellStyle>
+        <DataGridTemplateColumn.CellTemplate><DataTemplate><Button Content="&#xE8A7;" Tag="{Binding}" Width="34" Height="34" ToolTip="{Binding SourceHint}" ToolTipService.ShowOnDisabled="True" IsEnabled="{Binding HasSourceUrl}" Click="Source_Click"><Button.Style><Style TargetType="Button" BasedOn="{StaticResource Icon}"><Setter Property="Visibility" Value="Collapsed"/><Setter Property="Foreground" Value="{DynamicResource Accent}"/><Style.Triggers><DataTrigger Binding="{Binding IsYouTube}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Button.Style></Button></DataTemplate></DataGridTemplateColumn.CellTemplate>
+       </DataGridTemplateColumn>
+      </DataGrid.Columns>
+     </DataGrid>
+     <StackPanel x:Name="EmptyState" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"><TextBlock Text="◌" FontSize="58" Foreground="{DynamicResource Muted}" HorizontalAlignment="Center"/><TextBlock x:Name="EmptyText" Text="まだ曲がありません" FontSize="18" HorizontalAlignment="Center" Margin="0,14,0,8"/><TextBlock x:Name="EmptyHint" Text="「音楽を追加」からフォルダーを選択できます" Foreground="{DynamicResource Muted}" HorizontalAlignment="Center"/></StackPanel>
+    </Grid>
+    <Grid Grid.Row="4"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+     <TextBlock x:Name="StatusText" Text="準備中…" Foreground="{DynamicResource Muted}" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+    </Grid>
+   </Grid>
+  </Grid>
+  <Border Grid.Row="2" Background="{DynamicResource Sidebar}" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0">
+   <Grid Margin="24,12"><Grid.ColumnDefinitions><ColumnDefinition Width="280"/><ColumnDefinition Width="*"/><ColumnDefinition Width="255"/></Grid.ColumnDefinitions>
+    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="70"/><ColumnDefinition Width="*"/><ColumnDefinition Width="38"/></Grid.ColumnDefinitions>
+     <Button Padding="0" Click="CurrentAlbum_Click" ToolTip="再生中のアルバムを表示"><local:DiscArtwork x:Name="CurrentDisc" Source="{Binding P.Current.DisplayArtwork, Converter={StaticResource Art}}" IsPlaying="{Binding P.IsPlaying}" Width="56" Height="56"/></Button>
+     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0"><local:MarqueeText Text="{Binding P.Current.Title, TargetNullValue=音楽を選んでください}" FontWeight="SemiBold" ToolTip="{Binding P.Current.Title}"/><TextBlock Text="{Binding P.Current.Artist, TargetNullValue={x:Null}}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,6,0,0"/></StackPanel>
+     <Button Grid.Column="2" Content="{Binding P.Current.Heart, TargetNullValue=♡}" Foreground="{DynamicResource Accent}" FontSize="20" Padding="4" Click="CurrentFavorite_Click" ToolTip="お気に入り"/>
+    </Grid>
+    <Grid Grid.Column="1" Margin="16,0"><Grid.RowDefinitions><RowDefinition Height="46"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+     <local:SpectrumView Player="{Binding P}" Grid.RowSpan="2" Opacity="0.13"/>
+     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+      <Button x:Name="ShuffleButton" Style="{StaticResource Icon}" Content="&#xE8B1;" ToolTip="{Binding P.ShuffleLabel}" Click="Shuffle_Click" Margin="0,0,8,0"/>
+      <Button Style="{StaticResource Icon}" Content="&#xE892;" ToolTip="前の曲 (Ctrl+←)" Click="Previous_Click"/>
+      <Button x:Name="PlayButton" Style="{StaticResource Icon}" Content="{Binding P.PlayIcon}" ToolTip="{Binding P.PlayLabel}" Background="{DynamicResource Accent}" Foreground="{DynamicResource OnAccent}" Width="44" Height="44" Click="Play_Click" Margin="8,0"/>
+      <Button Style="{StaticResource Icon}" Content="&#xE893;" ToolTip="次の曲 (Ctrl+→)" Click="Next_Click"/>
+      <Button x:Name="RepeatButton" Style="{StaticResource Icon}" Content="{Binding P.RepeatIcon}" ToolTip="{Binding P.RepeatLabel}" Click="Repeat_Click" Margin="8,0,0,0"/>
+      <Button Style="{StaticResource Icon}" Content="&#xE71A;" ToolTip="停止 (Ctrl+S)" Click="Stop_Click"/>
+     </StackPanel>
+     <Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition Width="43"/><ColumnDefinition Width="*"/><ColumnDefinition Width="43"/></Grid.ColumnDefinitions><TextBlock Text="{Binding P.PositionText}" FontSize="10" Foreground="{DynamicResource Muted}" VerticalAlignment="Center"/><Slider x:Name="SeekSlider" Grid.Column="1" Maximum="{Binding P.Duration}" Value="{Binding P.Position, Mode=OneWay}" ToolTip="再生位置"/><TextBlock Grid.Column="2" Text="{Binding P.DurationText}" FontSize="10" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" HorizontalAlignment="Right"/></Grid>
+    </Grid>
+    <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+    <StackPanel Orientation="Horizontal">
+     <Button Style="{StaticResource Icon}" Content="{Binding P.VolumeIcon}" ToolTip="全出力をミュート / 解除" Click="Mute_Click"/><Slider x:Name="VolumeSlider" Width="80" Minimum="{Binding P.VolumeMinimum}" Maximum="{Binding P.VolumeMaximum}" SmallChange="{Binding P.VolumeStep}" LargeChange="{Binding P.VolumeLargeStep}" Value="{Binding P.Volume, Mode=TwoWay}" ToolTip="{Binding P.VolumeLabel}" VerticalAlignment="Center"/>
+     <Button Style="{StaticResource Icon}" Content="&#xE7F5;" ToolTip="音声の出力先（出力1・出力2）" Click="OutputDevice_Click"/>
+     <Button Style="{StaticResource Icon}" Content="&#xE8FD;" ToolTip="再生キュー" Click="Queue_Click" Margin="10,0,0,0"/>
+     <Button Style="{StaticResource Icon}" Content="&#xE740;" ToolTip="ミニプレイヤー (Ctrl+M)" Click="Mini_Click"/>
+    </StackPanel>
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
+     <Button x:Name="PrimaryMuteButton" Content="{Binding P.PrimaryOutputButtonLabel}" ToolTip="{Binding P.PrimaryOutputHint}" Click="PrimaryMute_Click" Padding="12,5" FontSize="11" MinWidth="84"/>
+     <Button x:Name="SecondaryMuteButton" Content="{Binding P.SecondaryOutputButtonLabel}" ToolTip="{Binding P.SecondaryOutputHint}" IsEnabled="{Binding P.SecondaryOutputEnabled}" Click="SecondaryMute_Click" Padding="12,5" FontSize="11" MinWidth="84" Margin="8,0,0,0"/>
+    </StackPanel>
+    </StackPanel>
+   </Grid>
+  </Border>
+ </Grid>
+ </Border>
+</Window>
