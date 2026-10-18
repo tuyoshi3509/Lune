@@ -57,10 +57,14 @@ try {
         $null = New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($target)) -Force
         if ($existed) { $null = New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($backup)) -Force; Copy-Item -LiteralPath $target -Destination $backup }
         $temp = $target + '.update-new'
+        $swapBackup = $target + '.update-old'
+        Assert-PlainPath $temp; Assert-PlainPath $swapBackup
         if (Test-Path -LiteralPath $temp) { throw 'Previous temporary update file exists' }
         Copy-Item -LiteralPath (Join-Path $stage ('files/' + $file.Name)) -Destination $temp
         $applied.Add([pscustomobject]@{ Target=$target; Backup=$backup; Existed=$existed })
-        if ($existed) { [IO.File]::Replace($temp, $target, $null) } else { [IO.File]::Move($temp, $target) }
+        # Windows PowerShell converts a null string argument to an empty path.
+        # Use a concrete same-volume backup path for the atomic replacement.
+        if ($existed) { [IO.File]::Replace($temp, $target, $swapBackup) } else { [IO.File]::Move($temp, $target) }
     }
     $newProcess = Launch-Lune $true
     $ack = Join-Path $stage 'ack.json'; $clock = [Diagnostics.Stopwatch]::StartNew()
@@ -69,6 +73,10 @@ try {
     $confirmation = Get-Content -LiteralPath $ack -Raw | ConvertFrom-Json
     if ($confirmation.Version -ne $plan.Version.TrimStart('v') -or $confirmation.ProcessId -ne $newProcess.Id) { throw '更新後のバージョンが一致しません。' }
     @{ Success=$true; Version=$plan.Version; ProcessId=$newProcess.Id; Message='更新が完了しました。' } | ConvertTo-Json | Set-Content -LiteralPath $result -Encoding UTF8
+    foreach ($file in $plan.Files) {
+        $swapBackup = (Join-Path $root $file.Name) + '.update-old'
+        try { if (Test-Path -LiteralPath $swapBackup) { Remove-Item -LiteralPath $swapBackup -Force } } catch { }
+    }
     # Keep only the small receipt. No user data is touched; these are validated staging subfolders.
     foreach ($name in @('files','backup')) {
         $cleanup = [IO.Path]::GetFullPath((Join-Path $stage $name))
@@ -90,6 +98,7 @@ catch {
             $file = $applied[$i]
             try { if ($file.Existed) { Copy-Item -LiteralPath $file.Backup -Destination $file.Target -Force } elseif (Test-Path -LiteralPath $file.Target) { Remove-Item -LiteralPath $file.Target -Force } }
             catch { $message += ' 復元エラー: ' + $_.Exception.Message }
+            foreach ($suffix in @('.update-new','.update-old')) { try { $temp = $file.Target + $suffix; if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Force } } catch { } }
         }
     }
     @{ Success=$false; Version=$plan.Version; Message=$message; BackupDirectory=(Join-Path $stage 'backup') } | ConvertTo-Json | Set-Content -LiteralPath $result -Encoding UTF8
