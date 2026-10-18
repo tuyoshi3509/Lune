@@ -60,6 +60,7 @@ public sealed class UpdateWindow : Window
         cancellation = CancellationTokenSource.CreateLinkedTokenSource(main.LifetimeToken);
         var updater = main.Updates;
         var panel = Dialogs.Shell(this, "アップデート", "現在のバージョン " + AppUpdates.CurrentText);
+        var previous = AppUpdates.RecentResult(); if (previous.Length > 0) panel.Children.Add(Dialogs.Note(previous));
         Dialogs.Check(panel, "起動時に更新を確認する（最大1日1回）", main.Preferences.CheckUpdatesOnStartup,
             value => { main.Preferences.CheckUpdatesOnStartup = value; main.SaveSettings(); });
         var state = Dialogs.Note(""); state.Margin = new Thickness(0, 16, 0, 8);

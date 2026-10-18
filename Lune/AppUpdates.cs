@@ -147,6 +147,22 @@ public sealed class AppUpdates : Observable
         }
         if (pending >= 3) throw new IOException("未完了の更新が3件あります。data/updates内のresult.jsonを確認し、必要なバックアップを保存してから該当フォルダーを整理してください。");
     }
+    internal static string RecentResult()
+    {
+        try
+        {
+            var root = Path.Combine(Paths.Data, "updates"); if (!Directory.Exists(root)) return "";
+            var result = new DirectoryInfo(root).EnumerateDirectories()
+                .Where(d => Guid.TryParseExact(d.Name, "N", out _) && !d.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                .Select(d => new FileInfo(Path.Combine(d.FullName, "result.json"))).Where(f => f.Exists && f.Length < 16384)
+                .OrderByDescending(f => f.LastWriteTimeUtc).FirstOrDefault();
+            if (result == null) return "";
+            using var json = JsonDocument.Parse(File.ReadAllText(result.FullName));
+            var value = json.RootElement;
+            return "前回の更新：" + (value.GetProperty("Success").GetBoolean() ? "成功" : "失敗（旧版の復元を確認してください）") + "\n" + value.GetProperty("Message").GetString();
+        }
+        catch { return ""; }
+    }
     public async Task<string> PrepareAsync(CancellationToken ct)
     {
         if (Busy) throw new InvalidOperationException("更新の確認・取得が進行中です。");
