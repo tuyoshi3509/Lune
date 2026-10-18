@@ -128,7 +128,10 @@ public partial class MainWindow : Window
         if (Environment.GetCommandLineArgs().Contains("--startup-import-test")) { await StartupImportChecks.Run(this); return; }
         if (Environment.GetCommandLineArgs().Contains("--activation-test")) { await SelfTests.Activation(this); return; }
         if (Environment.GetCommandLineArgs().Contains("--distribution-test")) { await DistributionChecks.Run(this); return; }
-        if (smoke) await SelfTests.Smoke(this);
+        if (Environment.GetCommandLineArgs().Contains("--update-check-test")) { await UpdateChecks.Run(this, false); return; }
+        if (Environment.GetCommandLineArgs().Contains("--update-integration-test")) { await UpdateChecks.Run(this, true); return; }
+        if (smoke) { await SelfTests.Smoke(this); return; }
+        await InitializeUpdates();
     }
     public async Task ScanLibraryAsync()
     {

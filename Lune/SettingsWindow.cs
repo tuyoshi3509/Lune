@@ -19,6 +19,7 @@ public sealed class SettingsWindow : Window
     {
         Owner = main; Title = "設定"; Width = 580; Height = 735; WindowStartupLocation = WindowStartupLocation.CenterOwner;
         var p = main.Preferences; var stack = Dialogs.Shell(this, "設定", "設定は自動で保存されます。");
+        stack.Children.Add(Dialogs.Button("Lune " + AppUpdates.CurrentText + " · アップデート", () => { Close(); main.ShowUpdates(); }));
         stack.Children.Add(Dialogs.Heading("音量の範囲"));
         var volumeFields = new Grid(); volumeFields.ColumnDefinitions.Add(new ColumnDefinition()); volumeFields.ColumnDefinitions.Add(new ColumnDefinition());
         void AddVolumeField(int column, string label, TextBox input, double value)

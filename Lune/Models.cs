@@ -89,6 +89,7 @@ public sealed class Settings
     public bool MiniTopmost { get; set; } = true;
     public bool MediaKeys { get; set; } = true;
     public bool StartMini { get; set; }
+    public bool CheckUpdatesOnStartup { get; set; } = true;
     public bool Shuffle { get; set; }
     public int Repeat { get; set; }
     public string LastTrack { get; set; } = "";
